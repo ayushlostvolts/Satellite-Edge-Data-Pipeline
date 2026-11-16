@@ -3,7 +3,7 @@
 # Database Type: NetCDF Gridded Cube (.nc)
 # Total Samples: 6373890
 # Overall Peak (mm): 660.5
-# Compute Time (s): 3.062
+# Compute Time (s): 3.227
 
 rank,lat,lon,lat_idx,lon_idx,p_max_raw_mm,p_max_filt_mm,total_rainfall_mm,wet_days,convective_ratio_pct,ceps_score
 1,25.25,91.25,75,99,660.5,539.5,11407.8,143,13.9,0.784

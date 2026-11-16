@@ -53,10 +53,10 @@
       --tracking-subheading: -0.01em;
 
       --text-heading: 56px;
-      --leading-heading: 0.95;
+      --leading-heading: 1.05;
 
-      --text-display: clamp(54px, 8.5vw, 120px);
-      --leading-display: 0.96;
+      --text-display: clamp(48px, 7.5vw, 108px);
+      --leading-display: 1.08;
 
       /* Spacing Scale (4px base) */
       --spacing-4: 4px;
@@ -304,9 +304,9 @@
     .display-block {
       font-family: var(--font-display);
       font-weight: 800;
-      font-size: clamp(54px, 8.5vw, 120px);
-      line-height: 0.96;
-      letter-spacing: -0.015em;
+      font-size: clamp(48px, 7.5vw, 108px);
+      line-height: 1.08;
+      letter-spacing: -0.01em;
       text-transform: uppercase;
       color: var(--color-carbon);
       position: relative;
@@ -315,7 +315,7 @@
       user-select: none;
       display: flex;
       flex-direction: column;
-      gap: 6px;
+      gap: 12px;
       margin-top: 14px;
       margin-bottom: 8px;
     }
@@ -323,7 +323,7 @@
     .display-row {
       display: block;
       position: relative;
-      line-height: 0.96;
+      line-height: 1.08;
     }
 
     /* 3D Electric Blue Ribbon Sculpture Canvas/SVG */
@@ -634,7 +634,7 @@
       font-family: var(--font-display);
       font-weight: 800;
       font-size: 44px;
-      line-height: 0.9;
+      line-height: 1.05;
       color: var(--color-carbon);
       margin: 6px 0;
     }
@@ -1072,7 +1072,7 @@
         <div style="display: flex; align-items: center; gap: 12px;">
           <div class="sticker sticker-blue" style="position: static;">STAGE 01</div>
           <h2
-            style="font-family: var(--font-display); font-weight: 800; font-size: clamp(36px, 5vw, 68px); line-height: 0.85;">
+            style="font-family: var(--font-display); font-weight: 800; font-size: clamp(36px, 5vw, 68px); line-height: 1.05;">
             DENOISE FILTER
           </h2>
         </div>
@@ -1171,7 +1171,7 @@
         <div style="display: flex; align-items: center; gap: 12px;">
           <div class="sticker sticker-violet" style="position: static;">STAGE 02</div>
           <h2
-            style="font-family: var(--font-display); font-weight: 800; font-size: clamp(36px, 5vw, 68px); line-height: 0.85;">
+            style="font-family: var(--font-display); font-weight: 800; font-size: clamp(36px, 5vw, 68px); line-height: 1.05;">
             DISCRETE WAVELET DWT
           </h2>
         </div>
@@ -1237,7 +1237,7 @@
         <div style="display: flex; align-items: center; gap: 12px;">
           <div class="sticker sticker-ember" style="position: static;">STAGE 03 & 04</div>
           <h2
-            style="font-family: var(--font-display); font-weight: 800; font-size: clamp(36px, 5vw, 68px); line-height: 0.85;">
+            style="font-family: var(--font-display); font-weight: 800; font-size: clamp(36px, 5vw, 68px); line-height: 1.05;">
             FEATURE RANKING
           </h2>
         </div>
@@ -1306,7 +1306,7 @@
         <div style="display: flex; align-items: center; gap: 12px;">
           <div class="sticker sticker-sunburst" style="position: static;">STAGE 05</div>
           <h2
-            style="font-family: var(--font-display); font-weight: 800; font-size: clamp(36px, 5vw, 68px); line-height: 0.85;">
+            style="font-family: var(--font-display); font-weight: 800; font-size: clamp(36px, 5vw, 68px); line-height: 1.05;">
             EDGE TELEMETRY
           </h2>
         </div>
@@ -1383,7 +1383,7 @@
         <div style="display: flex; align-items: center; gap: 12px;">
           <div class="sticker sticker-sunburst" style="position: static;">STAGE 06 // BATCH COMPUTE</div>
           <h2
-            style="font-family: var(--font-display); font-weight: 800; font-size: clamp(36px, 5vw, 68px); line-height: 0.95;">
+            style="font-family: var(--font-display); font-weight: 800; font-size: clamp(36px, 5vw, 68px); line-height: 1.05;">
             DATABASE INGESTION LAB
           </h2>
         </div>
@@ -1961,7 +1961,8 @@
           scales: {
             x: { display: false },
             y: { min: 0, max: 1.05, ticks: { stepSize: 0.2 } }
-              }
+          }
+        }
       });
     }
 
@@ -2173,7 +2174,8 @@
           { rank: 2, feature: "r95p_extreme_ratio_pct", score: 0.484 },
           { rank: 3, feature: "sdii_intensity_mm", score: 0.430 },
           { rank: 4, feature: "total_rainfall_mm", score: 0.321 },
-          { rank: 5, feature: "max_cwd_days", score: 0.268 }   { rank: 6, feature: "d1_energy_pct", score: 0.145 }
+          { rank: 5, feature: "max_cwd_days", score: 0.268 },
+          { rank: 6, feature: "d1_energy_pct", score: 0.145 }
         ]
       };
       updateUI(simulatedData);
