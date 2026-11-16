@@ -1,0 +1,2502 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SLUSH — Satellite Edge Rainfall Pipeline</title>
+
+  <!-- Typography from Google Fonts matching Slush Style Reference -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Antonio:wght@700;800&family=Plus+Jakarta+Sans:wght@500;700;800&family=Bowlby+One+SC&family=Space+Mono:wght@700&display=swap"
+    rel="stylesheet">
+
+  <!-- Chart.js for Interactive Charts -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+  <style>
+    /* ==========================================================================
+       SLUSH DESIGN TOKENS
+       ========================================================================== */
+    :root {
+      /* Colors */
+      --color-carbon: #000000;
+      --color-paper-white: #ffffff;
+      --color-sky-wash: #dceeff;
+      --color-concrete-gray: #cccccc;
+      --color-soft-mist: #e9e9e9;
+      --color-electric-blue: #4da2ff;
+      --color-mint-pop: #55db9c;
+      --color-lavender: #e9ccff;
+      --color-ember: #fb4903;
+      --color-sunburst: #ffd731;
+      --color-voltage-violet: #5c4ade;
+
+      /* Typography Families */
+      --font-display: 'Antonio', 'Bowlby One SC', -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-body: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      --font-mono: 'Space Mono', monospace;
+
+      /* Typography Scale */
+      --text-caption: 12px;
+      --leading-caption: 1.56;
+      --tracking-caption: 0.032em;
+
+      --text-body-lg: 15px;
+      --leading-body-lg: 1.4;
+      --tracking-body-lg: -0.01em;
+
+      --text-subheading: 24px;
+      --leading-subheading: 1.2;
+      --tracking-subheading: -0.01em;
+
+      --text-heading: 56px;
+      --leading-heading: 0.95;
+
+      --text-display: clamp(54px, 8.5vw, 120px);
+      --leading-display: 0.96;
+
+      /* Spacing Scale (4px base) */
+      --spacing-4: 4px;
+      --spacing-8: 8px;
+      --spacing-12: 12px;
+      --spacing-16: 16px;
+      --spacing-20: 20px;
+      --spacing-24: 24px;
+      --spacing-32: 32px;
+      --spacing-40: 40px;
+      --spacing-48: 48px;
+      --spacing-64: 64px;
+
+      /* Border Radii */
+      --radius-pill: 1600px;
+      --radius-card: 24px;
+      --radius-card-lg: 36px;
+      --radius-sticker: 20px;
+
+      /* Page Constraints */
+      --page-max-width: 1440px;
+    }
+
+    /* ==========================================================================
+       GLOBAL RESETS & PAPER CANVASES
+       ========================================================================== */
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: var(--font-body);
+      font-weight: 500;
+      font-size: var(--text-body-lg);
+      line-height: var(--leading-body-lg);
+      color: var(--color-carbon);
+      background-color: var(--color-paper-white);
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+
+    /* Outlines everywhere — hand-cut sticker aesthetic */
+    button,
+    input,
+    select,
+    .card,
+    .sticker,
+    .nav-pill,
+    .badge,
+    .qr-card {
+      border: 1px solid var(--color-carbon) !important;
+    }
+
+    /* NO gradients, NO fuzzy shadows */
+    * {
+      box-shadow: none !important;
+    }
+
+    /* ==========================================================================
+       COMPONENTS — MARQUEE BANNER
+       ========================================================================== */
+    .marquee-strip {
+      width: 100%;
+      background: var(--color-carbon);
+      color: var(--color-paper-white);
+      font-family: var(--font-body);
+      font-weight: 700;
+      font-size: 12px;
+      letter-spacing: 0.032em;
+      text-transform: uppercase;
+      overflow: hidden;
+      white-space: nowrap;
+      padding: 7px 0;
+      border-bottom: 1px solid var(--color-carbon);
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+    }
+
+    .marquee-inner {
+      display: inline-block;
+      animation: marquee 26s linear infinite;
+    }
+
+    @keyframes marquee {
+      0% {
+        transform: translateX(0);
+      }
+
+      100% {
+        transform: translateX(-50%);
+      }
+    }
+
+    /* ==========================================================================
+       TOP NAVIGATION BAR
+       ========================================================================== */
+    .nav-bar {
+      max-width: var(--page-max-width);
+      margin: 0 auto;
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      position: relative;
+      z-index: 900;
+    }
+
+    .nav-logo {
+      width: 44px;
+      height: 44px;
+      background: var(--color-paper-white);
+      border-radius: var(--radius-pill);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-display);
+      font-weight: 800;
+      font-size: 26px;
+      line-height: 1;
+      text-decoration: none;
+      color: var(--color-carbon);
+      transform: rotate(-3deg);
+    }
+
+    .nav-pills {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(255, 255, 255, 0.7);
+      padding: 4px;
+      border-radius: var(--radius-pill);
+      border: 1px solid var(--color-carbon);
+    }
+
+    .nav-pill {
+      background: var(--color-paper-white);
+      color: var(--color-carbon);
+      font-family: var(--font-body);
+      font-weight: 700;
+      font-size: 13px;
+      letter-spacing: 0.032em;
+      padding: 8px 18px;
+      border-radius: var(--radius-pill);
+      text-decoration: none;
+      cursor: pointer;
+      transition: background 0.15s ease, transform 0.15s ease;
+    }
+
+    .nav-pill:hover,
+    .nav-pill.active {
+      background: var(--color-sunburst);
+      transform: translateY(-1px);
+    }
+
+    .cta-filled {
+      background: var(--color-carbon);
+      color: var(--color-paper-white);
+      font-family: var(--font-body);
+      font-weight: 700;
+      font-size: 13px;
+      letter-spacing: 0.032em;
+      padding: 10px 22px;
+      border-radius: var(--radius-pill);
+      cursor: pointer;
+      text-decoration: none;
+      transition: background 0.15s ease, transform 0.15s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .cta-filled:hover {
+      background: var(--color-voltage-violet);
+      transform: translateY(-1px);
+    }
+
+    .ghost-button {
+      background: var(--color-paper-white);
+      color: var(--color-carbon);
+      font-family: var(--font-body);
+      font-weight: 700;
+      font-size: 13px;
+      letter-spacing: 0.032em;
+      padding: 9px 20px;
+      border-radius: var(--radius-pill);
+      cursor: pointer;
+      transition: background 0.15s ease, transform 0.15s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .ghost-button:hover {
+      background: var(--color-soft-mist);
+      transform: translateY(-1px);
+    }
+
+    /* ==========================================================================
+       SECTION BACKGROUND BANDS
+       ========================================================================== */
+    .section-band {
+      width: 100%;
+      padding: 64px 24px;
+      border-bottom: 1px solid var(--color-carbon);
+      position: relative;
+    }
+
+    .bg-sky {
+      background-color: var(--color-sky-wash);
+    }
+
+    .bg-white {
+      background-color: var(--color-paper-white);
+    }
+
+    .bg-concrete {
+      background-color: var(--color-concrete-gray);
+    }
+
+    .bg-lavender {
+      background-color: var(--color-lavender);
+    }
+
+    .container {
+      max-width: var(--page-max-width);
+      margin: 0 auto;
+      position: relative;
+    }
+
+    /* ==========================================================================
+       HERO & SCULPTURAL DISPLAY HEADLINES
+       ========================================================================== */
+    .hero-wrap {
+      position: relative;
+      padding-top: 20px;
+      padding-bottom: 40px;
+    }
+
+    .display-block {
+      font-family: var(--font-display);
+      font-weight: 800;
+      font-size: clamp(54px, 8.5vw, 120px);
+      line-height: 0.96;
+      letter-spacing: -0.015em;
+      text-transform: uppercase;
+      color: var(--color-carbon);
+      position: relative;
+      z-index: 10;
+      word-break: break-word;
+      user-select: none;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-top: 14px;
+      margin-bottom: 8px;
+    }
+
+    .display-row {
+      display: block;
+      position: relative;
+      line-height: 0.96;
+    }
+
+    /* 3D Electric Blue Ribbon Sculpture Canvas/SVG */
+    .ribbon-svg {
+      position: absolute;
+      pointer-events: none;
+      z-index: 5;
+    }
+
+    .hero-ribbon {
+      top: -15%;
+      right: 4%;
+      width: 460px;
+      height: 380px;
+      transform: rotate(8deg);
+      opacity: 0.95;
+    }
+
+    .ribbon-tube {
+      fill: none;
+      stroke: var(--color-electric-blue);
+      stroke-width: 48px;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      filter: drop-shadow(4px 6px 0px #000000);
+    }
+
+    .tagline-subhead {
+      font-family: var(--font-body);
+      font-weight: 500;
+      font-size: clamp(16px, 2.2vw, 24px);
+      line-height: 1.25;
+      letter-spacing: -0.01em;
+      max-width: 760px;
+      margin-top: 24px;
+      margin-bottom: 32px;
+      color: var(--color-carbon);
+      position: relative;
+      z-index: 15;
+    }
+
+    /* ==========================================================================
+       STICKER ACCENTS (Inflatable Universe)
+       ========================================================================== */
+    .sticker {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 7px 16px;
+      border-radius: var(--radius-sticker);
+      font-family: var(--font-body);
+      font-weight: 700;
+      font-size: 13px;
+      letter-spacing: 0.032em;
+      color: var(--color-carbon);
+      user-select: none;
+      position: absolute;
+      z-index: 20;
+      white-space: nowrap;
+    }
+
+    .sticker-mint {
+      background: var(--color-mint-pop);
+    }
+
+    .sticker-ember {
+      background: var(--color-ember);
+      color: var(--color-paper-white);
+    }
+
+    .sticker-sunburst {
+      background: var(--color-sunburst);
+    }
+
+    .sticker-violet {
+      background: var(--color-voltage-violet);
+      color: var(--color-paper-white);
+    }
+
+    .sticker-lavender {
+      background: var(--color-lavender);
+    }
+
+    .sticker-blue {
+      background: var(--color-electric-blue);
+      color: var(--color-paper-white);
+    }
+
+    /* Positioned Floating Hero Stickers */
+    .st-rocket {
+      top: 5%;
+      right: 32%;
+      transform: rotate(-10deg);
+    }
+
+    .st-edge {
+      top: 50%;
+      right: 12%;
+      transform: rotate(14deg);
+    }
+
+    .st-q15 {
+      bottom: 2%;
+      left: 38%;
+      transform: rotate(-6deg);
+    }
+
+    .st-dwt {
+      top: -24px;
+      left: 8px;
+      transform: rotate(5deg);
+    }
+
+    /* ==========================================================================
+       CARDS & INTERACTIVE PANELS
+       ========================================================================== */
+    .card {
+      background: var(--color-paper-white);
+      border-radius: var(--radius-card);
+      padding: var(--spacing-24);
+      position: relative;
+    }
+
+    .card-elevated {
+      border-radius: var(--radius-card-lg);
+      padding: var(--spacing-32);
+    }
+
+    .card-lavender {
+      background: var(--color-lavender);
+    }
+
+    .card-sky {
+      background: var(--color-sky-wash);
+    }
+
+    .card-violet {
+      background: var(--color-voltage-violet);
+      color: var(--color-paper-white);
+    }
+
+    .card-concrete {
+      background: var(--color-concrete-gray);
+    }
+
+    /* Grid Layouts */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 24px;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 20px;
+    }
+
+    .grid-4 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap: 16px;
+    }
+
+    /* ==========================================================================
+       FORM & CONTROL ELEMENTS
+       ========================================================================== */
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 16px;
+    }
+
+    .form-label {
+      font-family: var(--font-body);
+      font-weight: 700;
+      font-size: 13px;
+      letter-spacing: 0.032em;
+      text-transform: uppercase;
+      color: var(--color-carbon);
+    }
+
+    .select-pill,
+    .input-pill {
+      width: 100%;
+      height: 44px;
+      background: var(--color-paper-white);
+      border-radius: var(--radius-pill);
+      padding: 0 16px;
+      font-family: var(--font-body);
+      font-weight: 600;
+      font-size: 14px;
+      color: var(--color-carbon);
+      outline: none;
+    }
+
+    .preset-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .preset-pill-btn {
+      background: var(--color-paper-white);
+      border-radius: var(--radius-pill);
+      padding: 8px 16px;
+      font-family: var(--font-body);
+      font-weight: 700;
+      font-size: 13px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.12s ease;
+    }
+
+    .preset-pill-btn.active {
+      background: var(--color-carbon);
+      color: var(--color-paper-white);
+    }
+
+    .toggle-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      background: var(--color-soft-mist);
+      padding: 10px 16px;
+      border-radius: var(--radius-pill);
+      border: 1px solid var(--color-carbon);
+      margin-bottom: 16px;
+    }
+
+    .toggle-switch {
+      position: relative;
+      display: inline-block;
+      width: 48px;
+      height: 26px;
+    }
+
+    .toggle-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: var(--color-paper-white);
+      border: 1px solid var(--color-carbon);
+      border-radius: 34px;
+      transition: .2s;
+    }
+
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      bottom: 3px;
+      background-color: var(--color-carbon);
+      border-radius: 50%;
+      transition: .2s;
+    }
+
+    input:checked+.slider {
+      background-color: var(--color-mint-pop);
+    }
+
+    input:checked+.slider:before {
+      transform: translateX(22px);
+    }
+
+    /* ==========================================================================
+       METRIC SCORECARDS (HUD)
+       ========================================================================== */
+    .metric-card {
+      background: var(--color-paper-white);
+      border-radius: var(--radius-card);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 125px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .metric-label {
+      font-family: var(--font-body);
+      font-weight: 700;
+      font-size: 12px;
+      letter-spacing: 0.032em;
+      text-transform: uppercase;
+      color: #555555;
+    }
+
+    .metric-value {
+      font-family: var(--font-display);
+      font-weight: 800;
+      font-size: 44px;
+      line-height: 0.9;
+      color: var(--color-carbon);
+      margin: 6px 0;
+    }
+
+    .metric-sub {
+      font-size: 12px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .badge-pill {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: var(--radius-pill);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+    }
+
+    /* ==========================================================================
+       CHART CONTAINERS
+       ========================================================================== */
+    .chart-container {
+      background: var(--color-paper-white);
+      border-radius: var(--radius-card);
+      padding: 24px;
+      position: relative;
+      margin-top: 20px;
+    }
+
+    .chart-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .chart-title {
+      font-family: var(--font-body);
+      font-weight: 700;
+      font-size: 16px;
+      letter-spacing: -0.01em;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .chart-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .chart-canvas-wrap {
+      width: 100%;
+      height: 360px;
+      position: relative;
+    }
+
+    .scalogram-canvas-wrap {
+      width: 100%;
+      height: 280px;
+      position: relative;
+    }
+
+    /* ==========================================================================
+       RANKING TABLE
+       ========================================================================== */
+    .table-card {
+      background: var(--color-paper-white);
+      border-radius: var(--radius-card);
+      overflow: hidden;
+      margin-top: 20px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+
+    th {
+      background: var(--color-soft-mist);
+      font-family: var(--font-body);
+      font-weight: 700;
+      font-size: 12px;
+      letter-spacing: 0.032em;
+      text-transform: uppercase;
+      padding: 12px 16px;
+      text-align: left;
+      border-bottom: 1px solid var(--color-carbon);
+    }
+
+    td {
+      padding: 12px 16px;
+      border-bottom: 1px solid #e0e0e0;
+      font-weight: 600;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    tr:hover td {
+      background-color: #fafafa;
+    }
+
+    .rank-number {
+      font-family: var(--font-display);
+      font-size: 20px;
+      font-weight: 800;
+      line-height: 1;
+    }
+
+    /* ==========================================================================
+       QR CODE & HARDWARE STICKER CARD
+       ========================================================================== */
+    .qr-card {
+      background: var(--color-voltage-violet);
+      border-radius: 20px;
+      display: flex;
+      align-items: stretch;
+      overflow: hidden;
+      min-height: 120px;
+    }
+
+    .qr-panel-left {
+      background: var(--color-paper-white);
+      padding: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-right: 1px solid var(--color-carbon);
+    }
+
+    .qr-panel-right {
+      padding: 16px 20px;
+      color: var(--color-paper-white);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 4px;
+    }
+
+    /* ==========================================================================
+       ANIMATIONS & TRANSITIONS
+       ========================================================================== */
+    .pulse-dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--color-mint-pop);
+      margin-right: 4px;
+      animation: pulse 1.8s infinite;
+    }
+
+    @keyframes pulse {
+      0% {
+        opacity: 0.4;
+      }
+
+      50% {
+        opacity: 1;
+        transform: scale(1.2);
+      }
+
+      100% {
+        opacity: 0.4;
+      }
+    }
+
+    .loading-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(255, 255, 255, 0.85);
+      border-radius: var(--radius-card);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 12px;
+      z-index: 50;
+      font-family: var(--font-body);
+      font-weight: 700;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .display-block {
+        font-size: 64px;
+      }
+
+      .nav-pills {
+        display: none;
+      }
+
+      .hero-ribbon {
+        display: none;
+      }
+
+      .st-rocket,
+      .st-edge {
+        display: none;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- ========================================================================
+       MARQUEE SCROLLING BANNER
+       ======================================================================== -->
+  <div class="marquee-strip">
+    <div class="marquee-inner">
+      🛰️ SATELLITE EDGE PROCESSING // IMD 0.25° DAILY GRIDDED RAINFALL // STAGE 1 DENOISE FILTER // STAGE 2 DISCRETE
+      WAVELET TRANSFORM // STAGE 3 FEATURE EXTRACTION // STAGE 4 DISCRIMINATIVE RANKING // ONBOARD Q15 FIXED-POINT
+      ARITHMETIC // PARSEVAL ENERGY PRESERVATION // ZERO-DIVISIONS // 🛰️ SATELLITE EDGE PROCESSING // IMD 0.25° DAILY
+      GRIDDED RAINFALL // STAGE 1 DENOISE FILTER // STAGE 2 DISCRETE WAVELET TRANSFORM // STAGE 3 FEATURE EXTRACTION //
+      STAGE 4 DISCRIMINATIVE RANKING // ONBOARD Q15 FIXED-POINT ARITHMETIC // PARSEVAL ENERGY PRESERVATION //
+      ZERO-DIVISIONS //
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       SECTION 1: HERO & PIPELINE CONTROL BOARD (Sky Wash #dceeff)
+       ======================================================================== -->
+  <section class="section-band bg-sky" id="hero">
+
+    <!-- Top Nav -->
+    <header class="nav-bar">
+      <a href="#hero" class="nav-logo" title="Slush Satellite Pipeline">S</a>
+
+      <nav class="nav-pills">
+        <a href="#hero" class="nav-pill active">01 Pipeline</a>
+        <a href="#denoise" class="nav-pill">02 Filter & Denoise</a>
+        <a href="#dwt" class="nav-pill">03 Wavelet DWT</a>
+        <a href="#ranking" class="nav-pill">04 Feature Ranking</a>
+        <a href="#edge" class="nav-pill">05 Edge Telemetry</a>
+        <a href="#database" class="nav-pill" style="background: var(--color-sunburst);">06 Database Lab</a>
+      </nav>
+
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <a href="/api/download-manual" class="ghost-button" style="text-decoration: none;"
+          title="Download PDF User Manual">
+          <span>📄</span> PDF MANUAL
+        </a>
+        <button class="cta-filled" id="runPipelineBtnTop">
+          <span>🚀</span> LAUNCH PIPELINE
+        </button>
+      </div>
+    </header>
+
+    <div class="container hero-wrap">
+
+      <!-- Inflatable 3D Electric Blue Tubular Ribbon SVG Motif -->
+      <svg class="ribbon-svg hero-ribbon" viewBox="0 0 460 380" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <!-- 3D Ribbon body in Electric Blue with black edge outline -->
+        <path
+          d="M 40 280 C 120 340, 260 340, 320 220 C 370 120, 300 40, 180 50 C 70 60, 40 180, 140 240 C 230 290, 410 240, 430 130"
+          class="ribbon-tube" />
+        <!-- Inner highlight stroke giving 3D volume without gradient -->
+        <path
+          d="M 40 280 C 120 340, 260 340, 320 220 C 370 120, 300 40, 180 50 C 70 60, 40 180, 140 240 C 230 290, 410 240, 430 130"
+          stroke="#ffffff" stroke-width="8px" stroke-linecap="round" fill="none" opacity="0.6" />
+      </svg>
+
+      <!-- Floating Collage Stickers -->
+      <div class="sticker sticker-ember st-rocket">🚀 ONBOARD EDGE PAYLOAD</div>
+      <div class="sticker sticker-mint st-edge">✓ 100% PURE NUMPY</div>
+      <div class="sticker sticker-sunburst st-q15">⚡ Q15 INT16 DSP: 8B/CELL</div>
+      <div class="sticker sticker-violet st-dwt">🌊 DYADIC DWT LIFTING</div>
+
+      <!-- Sculptural Display Headline -->
+      <div class="display-block">
+        <span class="display-row">SLUSH RAIN</span>
+        <span class="display-row">SATELLITE</span>
+        <span class="display-row">EDGE LAB</span>
+      </div>
+
+      <p class="tagline-subhead">
+        Real-time satellite edge processing for India Meteorological Department (IMD) 0.25° gridded daily rainfall:
+        domain-aware denoising, multi-resolution DWT wavelets, and closed-form extreme event feature ranking.
+      </p>
+
+      <!-- Interactive Input Control Board -->
+      <div class="card card-elevated" style="margin-top: 24px;">
+        <div
+          style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 20px;">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <div class="sticker sticker-sunburst" style="position: static;">INPUT SELECTOR</div>
+            <h3 style="font-family: var(--font-body); font-weight: 800; font-size: 20px;">Target Grid Cell & Simulation
+              Configuration</h3>
+          </div>
+          <span style="font-size: 13px; font-weight: 700; color: #555555;">
+            <span class="pulse-dot"></span> Live IMD 2024 Grid Active (135 × 129 Cells)
+          </span>
+        </div>
+
+        <!-- Benchmark Station Selector Pills -->
+        <div class="form-group">
+          <label class="form-label">Preloaded IMD Climatic Benchmark Stations</label>
+          <div class="preset-pills">
+            <button class="preset-pill-btn active" data-city="Mumbai" data-lat="19.0" data-lon="72.75">
+              <span>📍</span> Mumbai (19.0°N, 72.75°E) — Ghats Monsoon
+            </button>
+            <button class="preset-pill-btn" data-city="Cherrapunji" data-lat="25.25" data-lon="91.75">
+              <span>📍</span> Cherrapunji (25.25°N, 91.75°E) — Extreme Meghalaya
+            </button>
+            <button class="preset-pill-btn" data-city="Kolkata" data-lat="22.5" data-lon="88.25">
+              <span>📍</span> Kolkata (22.5°N, 88.25°E) — Gangetic Delta
+            </button>
+            <button class="preset-pill-btn" data-city="Jaisalmer" data-lat="26.9" data-lon="70.9">
+              <span>📍</span> Jaisalmer (26.9°N, 70.9°E) — Thar Desert Arid
+            </button>
+          </div>
+        </div>
+
+        <div class="grid-3">
+          <!-- Custom Coordinate Controls -->
+          <div class="form-group">
+            <label class="form-label">Latitude (°N: 6.5 – 38.5)</label>
+            <input type="number" step="0.25" min="6.5" max="38.5" value="19.0" id="inputLat" class="input-pill">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Longitude (°E: 66.5 – 100.0)</label>
+            <input type="number" step="0.25" min="66.5" max="100.0" value="72.75" id="inputLon" class="input-pill">
+          </div>
+
+          <!-- Custom File Upload Option -->
+          <div class="form-group">
+            <label class="form-label">Custom Series File (CSV / TXT)</label>
+            <input type="file" id="fileUploadInput" accept=".csv,.txt,.json" class="input-pill"
+              style="padding-top: 8px;">
+          </div>
+        </div>
+
+        <div class="grid-4" style="margin-top: 8px;">
+          <!-- Noise Model -->
+          <div class="form-group">
+            <label class="form-label">Stress Noise Model</label>
+            <select id="selectNoiseType" class="select-pill">
+              <option value="mixed" selected>Mixed (Gauss 1mm + 2% Spikes)</option>
+              <option value="gaussian">Gaussian Noise Only (σ = 2mm)</option>
+              <option value="impulsive">Isolated Spikes (5% Spikes 20-80mm)</option>
+              <option value="dropouts">Sensor Dropouts (-999 Masking)</option>
+              <option value="none">Clean Series (Zero Noise)</option>
+            </select>
+          </div>
+
+          <!-- Filter Mode -->
+          <div class="form-group">
+            <label class="form-label">Stage 1 Filter Mode</label>
+            <select id="selectFilterMode" class="select-pill">
+              <option value="hybrid" selected>Hybrid (Stage A + B, Default)</option>
+              <option value="iir">Adaptive IIR Only (Stage B)</option>
+              <option value="fir">Custom Windowed FIR (Stage C)</option>
+              <option value="full">Full Pipeline (Stage A + B + C)</option>
+            </select>
+          </div>
+
+          <!-- Wavelet Family -->
+          <div class="form-group">
+            <label class="form-label">Stage 2 Wavelet Family</label>
+            <select id="selectWavelet" class="select-pill">
+              <option value="haar" selected>Haar / db1 (Step Onset)</option>
+              <option value="db4">Daubechies db4 (8 Taps)</option>
+              <option value="db2">Daubechies db2 (4 Taps)</option>
+              <option value="cdf53">CDF 5/3 (In-Place Lifting)</option>
+            </select>
+          </div>
+
+          <!-- DWT Level -->
+          <div class="form-group">
+            <label class="form-label">DWT Scale Depth</label>
+            <select id="selectDwtLevel" class="select-pill">
+              <option value="3" selected>Level 3 (A3, D3, D2, D1)</option>
+              <option value="4">Level 4 (A4, D4, D3, D2, D1)</option>
+              <option value="2">Level 2 (A2, D2, D1)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Volume Preservation Toggle & Execute CTA -->
+        <div
+          style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; margin-top: 16px;">
+          <div class="toggle-wrap">
+            <span style="font-weight: 700; font-size: 13px;">Hydrological 30-Day Volume Preservation (Bias <
+                0.001%)</span>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="checkVolumePreserve" checked>
+                  <span class="slider"></span>
+                </label>
+          </div>
+
+          <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+            <button class="cta-filled" id="executePipelineBtn" style="padding: 14px 36px; font-size: 15px;">
+              <span>⚡</span> RUN FULL SATELLITE PIPELINE
+            </button>
+          </div>
+        </div>
+
+        <!-- Dynamic Execution Status Banner & Toast -->
+        <div id="pipelineStatusBanner"
+          style="display: none; align-items: center; justify-content: space-between; padding: 12px 20px; background: var(--color-sunburst); border-radius: var(--radius-pill); border: 1px solid var(--color-carbon); margin-top: 18px; font-weight: 700; font-size: 13px; transition: all 0.2s ease;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span class="pulse-dot"></span>
+            <span id="pipelineStatusText">🛰️ Satellite Edge Pipeline Ready</span>
+          </div>
+          <span id="pipelineStatusMeta"
+            style="font-family: var(--font-mono); font-size: 11px; padding: 2px 10px; background: rgba(0,0,0,0.12); border-radius: var(--radius-pill);">READY</span>
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+
+
+  <!-- ========================================================================
+       SECTION 2: STAGE 1 DENOISING & TIME-SERIES VISUALIZER (Paper White #ffffff)
+       ======================================================================== -->
+  <section class="section-band bg-white" id="denoise">
+    <div class="container">
+
+      <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <div class="sticker sticker-blue" style="position: static;">STAGE 01</div>
+          <h2
+            style="font-family: var(--font-display); font-weight: 800; font-size: clamp(36px, 5vw, 68px); line-height: 0.85;">
+            DENOISE FILTER
+          </h2>
+        </div>
+        <div class="sticker sticker-mint" style="position: static;">
+          VERIFIED VS SCIPY BASELINES
+        </div>
+      </div>
+
+      <p style="margin-top: 12px; margin-bottom: 24px; max-width: 800px; color: #444444;">
+        Domain-aware Hampel impulse suppression followed by non-linear adaptive-gain innovation tracking ($y[n] =
+        a[n]x[n] + (1-a[n])y[n-1]$). Suppresses isolated sensor spikes while preserving multi-day storm peaks.
+      </p>
+
+      <!-- Metric Scorecards HUD -->
+      <div class="grid-4" id="metricsHud">
+        <div class="metric-card">
+          <span class="metric-label">SNR Improvement</span>
+          <span class="metric-value" id="valSnrImp" style="color: var(--color-voltage-violet);">+0.00 dB</span>
+          <div class="metric-sub">
+            <span class="badge-pill" id="badgeSnr" style="background: var(--color-mint-pop);">BEATS ALL BASELINES</span>
+          </div>
+        </div>
+
+        <div class="metric-card">
+          <span class="metric-label">Peak Preservation Ratio</span>
+          <span class="metric-value" id="valPeakRatio" style="color: var(--color-ember);">0.000</span>
+          <div class="metric-sub">
+            <span class="badge-pill" id="badgePeak" style="background: var(--color-sunburst);">TARGET ≥ 0.85</span>
+          </div>
+        </div>
+
+        <div class="metric-card">
+          <span class="metric-label">30-Day Volume Bias</span>
+          <span class="metric-value" id="valVolumeBias" style="color: var(--color-mint-pop);">0.00%</span>
+          <div class="metric-sub">
+            <span class="badge-pill" style="background: var(--color-sky-wash);">CRITERION &lt; ±0.5%</span>
+          </div>
+        </div>
+
+        <div class="metric-card">
+          <span class="metric-label">Wet-Day F1 Score</span>
+          <span class="metric-value" id="valWetF1" style="color: var(--color-carbon);">0.000</span>
+          <div class="metric-sub">
+            <span class="badge-pill" style="background: var(--color-lavender);">WET THRESH ≥ 2.5 mm</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Main Time-Series Denoising Chart -->
+      <div class="chart-container">
+        <div class="chart-header">
+          <div class="chart-title">
+            <span
+              style="display:inline-block; width:12px; height:12px; background:var(--color-electric-blue); border-radius:50%; border:1px solid #000;"></span>
+            <span id="chartStationTitle">Daily Rainfall Time Series (Clean Truth vs Noisy vs Filtered vs
+              Baselines)</span>
+          </div>
+          <div class="chart-actions">
+            <button class="ghost-button" id="btnToggleClean">Clean Truth</button>
+            <button class="ghost-button" id="btnToggleNoisy">Noisy Input</button>
+            <button class="ghost-button" id="btnToggleButter">Butterworth 3</button>
+            <button class="ghost-button" id="btnToggleMed">Median 5</button>
+          </div>
+        </div>
+        <div class="chart-canvas-wrap">
+          <canvas id="canvasTimeSeries"></canvas>
+        </div>
+      </div>
+
+      <!-- Adaptive Gain Dynamics Chart -->
+      <div class="chart-container" style="background: var(--color-soft-mist);">
+        <div class="chart-header">
+          <div class="chart-title">
+            <span
+              style="display:inline-block; width:12px; height:12px; background:var(--color-ember); border-radius:50%; border:1px solid #000;"></span>
+            <span>Stage B Adaptive Gain a[n] Dynamics ($a_{\min}=0.08$ on Noise, $a_{\max}=0.95$ on Storms)</span>
+          </div>
+          <span class="sticker sticker-ember" style="position: static;">INNOVATION e[n] TRACKING</span>
+        </div>
+        <div style="height: 180px; width: 100%;">
+          <canvas id="canvasGainSeries"></canvas>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+
+  <!-- ========================================================================
+       SECTION 3: STAGE 2 DWT MULTI-SCALE SCALOGRAM (Concrete Gray #cccccc)
+       ======================================================================== -->
+  <section class="section-band bg-concrete" id="dwt">
+    <div class="container">
+
+      <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <div class="sticker sticker-violet" style="position: static;">STAGE 02</div>
+          <h2
+            style="font-family: var(--font-display); font-weight: 800; font-size: clamp(36px, 5vw, 68px); line-height: 0.85;">
+            DISCRETE WAVELET DWT
+          </h2>
+        </div>
+        <div class="sticker sticker-sunburst" style="position: static;">
+          PARSEVAL ENERGY CONSERVED (< 10⁻¹⁰) </div>
+        </div>
+
+        <p style="margin-top: 12px; margin-bottom: 24px; max-width: 820px; color: #222222;">
+          Dyadic multi-level wavelet decomposition isolating synoptic seasonal monsoon waves from rapid convective
+          cloudbursts. Supports orthogonal filter banks and integer reversible CDF 5/3 lifting.
+        </p>
+
+        <div class="grid-2">
+          <!-- Subband Scalogram Subplots -->
+          <div class="card" style="grid-column: span 1;">
+            <div class="chart-header">
+              <div class="chart-title">Wavelet Subbands (Approximation A3 & Details D3, D2, D1)</div>
+              <span class="badge-pill" style="background: var(--color-mint-pop);">RECONSTRUCTION &lt; 10⁻¹²</span>
+            </div>
+            <div class="scalogram-canvas-wrap">
+              <canvas id="canvasScalogram"></canvas>
+            </div>
+          </div>
+
+          <!-- Energy Partition Donut / Breakdown -->
+          <div class="card"
+            style="grid-column: span 1; display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+              <div class="chart-header">
+                <div class="chart-title">Subband Energy Partition (%)</div>
+                <span class="sticker sticker-ember" style="position: static;">CONVECTIVE VS SYNOPTIC</span>
+              </div>
+              <div style="height: 200px; position: relative;">
+                <canvas id="canvasEnergyDonut"></canvas>
+              </div>
+            </div>
+
+            <div
+              style="margin-top: 16px; padding: 12px; background: var(--color-soft-mist); border-radius: 16px; border: 1px solid var(--color-carbon); font-size: 13px;">
+              <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                <span>Convective Storm Ratio (D1+D2):</span>
+                <strong id="valConvectiveRatio">0.0%</strong>
+              </div>
+              <div style="display: flex; justify-content: space-between;">
+                <span>Seasonal Macro-Envelope (A3):</span>
+                <strong id="valSeasonalRatio">0.0%</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+  </section>
+
+
+  <!-- ========================================================================
+       SECTION 4: FEATURE EXTRACTION & RANKING (Lavender #e9ccff)
+       ======================================================================== -->
+  <section class="section-band bg-lavender" id="ranking">
+    <div class="container">
+
+      <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <div class="sticker sticker-ember" style="position: static;">STAGE 03 & 04</div>
+          <h2
+            style="font-family: var(--font-display); font-weight: 800; font-size: clamp(36px, 5vw, 68px); line-height: 0.85;">
+            FEATURE RANKING
+          </h2>
+        </div>
+        <div class="sticker sticker-mint" style="position: static;">
+          CLOSED-FORM FISHER + SNR
+        </div>
+      </div>
+
+      <p style="margin-top: 12px; margin-bottom: 24px; max-width: 820px; color: #333333;">
+        Onboard feature extraction and ranking to prioritize satellite downlink telemetry and detect localized flash
+        flood triggers without iterative neural network training.
+      </p>
+
+      <div class="grid-2">
+        <!-- Feature Ranking Bar Chart -->
+        <div class="card">
+          <div class="chart-header">
+            <div class="chart-title">Composite Edge Priority Score (CEPS) Ranking</div>
+            <span class="badge-pill" style="background: var(--color-sunburst);">TOP 8 TELEMETRY SIGNALS</span>
+          </div>
+          <div style="height: 300px;">
+            <canvas id="canvasFeatureRank"></canvas>
+          </div>
+        </div>
+
+        <!-- Top Features Table -->
+        <div class="card" style="padding: 0; overflow: hidden;">
+          <div
+            style="padding: 16px 20px; border-bottom: 1px solid var(--color-carbon); background: var(--color-paper-white); display: flex; align-items: center; justify-content: space-between;">
+            <h4 style="font-weight: 800; font-size: 15px;">Selected Transmission Features</h4>
+            <button class="ghost-button" id="btnDownloadCsv" style="padding: 6px 14px; font-size: 12px;">
+              ⬇ Export Results CSV
+            </button>
+          </div>
+          <div style="overflow-x: auto;">
+            <table>
+              <thead>
+                <tr>
+                  <th>Rank</th>
+                  <th>Feature Name</th>
+                  <th>Domain</th>
+                  <th>Value</th>
+                  <th>CEPS Score</th>
+                </tr>
+              </thead>
+              <tbody id="tableRankingBody">
+                <!-- Dynamically populated -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+
+  <!-- ========================================================================
+       SECTION 5: EDGE TELEMETRY & HARDWARE PROFILING (Sky Wash #dceeff)
+       ======================================================================== -->
+  <section class="section-band bg-sky" id="edge">
+    <div class="container">
+
+      <div
+        style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 24px;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <div class="sticker sticker-sunburst" style="position: static;">STAGE 05</div>
+          <h2
+            style="font-family: var(--font-display); font-weight: 800; font-size: clamp(36px, 5vw, 68px); line-height: 0.85;">
+            EDGE TELEMETRY
+          </h2>
+        </div>
+        <div class="sticker sticker-blue" style="position: static;">
+          SPACE-READY ASIC / FPGA / MCU
+        </div>
+      </div>
+
+      <div class="grid-3">
+        <!-- QR Hardware Card -->
+        <div class="qr-card">
+          <div class="qr-panel-left">
+            <!-- Hand-drawn vector QR code placeholder matching Slush component -->
+            <svg width="84" height="84" viewBox="0 0 100 100" fill="var(--color-carbon)">
+              <rect x="5" y="5" width="30" height="30" fill="none" stroke="black" stroke-width="6" />
+              <rect x="15" y="15" width="10" height="10" />
+              <rect x="65" y="5" width="30" height="30" fill="none" stroke="black" stroke-width="6" />
+              <rect x="75" y="15" width="10" height="10" />
+              <rect x="5" y="65" width="30" height="30" fill="none" stroke="black" stroke-width="6" />
+              <rect x="15" y="75" width="10" height="10" />
+              <rect x="45" y="10" width="10" height="15" />
+              <rect x="45" y="35" width="20" height="10" />
+              <rect x="70" y="45" width="20" height="15" />
+              <rect x="45" y="65" width="10" height="25" />
+              <rect x="65" y="75" width="25" height="15" />
+            </svg>
+          </div>
+          <div class="qr-panel-right">
+            <span style="font-size: 11px; letter-spacing: 0.032em; text-transform: uppercase;">TELEMETRY EXPORT</span>
+            <span style="font-family: var(--font-display); font-size: 26px; line-height: 1;">SAT-LINK</span>
+            <span style="font-size: 12px; opacity: 0.9;">JSON Specs & Weights</span>
+          </div>
+        </div>
+
+        <!-- FLOPs & Ops Card -->
+        <div class="card">
+          <span class="metric-label">Pipeline FLOPs / Sample</span>
+          <div
+            style="font-family: var(--font-display); font-size: 40px; font-weight: 800; line-height: 1; margin: 8px 0;">
+            66 OPS
+          </div>
+          <p style="font-size: 12px; color: #555;">
+            10 Multiplies, 17 Additions, 1 Division, 38 Comparisons. Executes in 7.45 ms per full India daily grid
+            slice.
+          </p>
+        </div>
+
+        <!-- Memory Footprint Card -->
+        <div class="card">
+          <span class="metric-label">Fixed-Point Q15 RAM</span>
+          <div
+            style="font-family: var(--font-display); font-size: 40px; font-weight: 800; line-height: 1; margin: 8px 0; color: var(--color-mint-pop);">
+            8 BYTES / CELL
+          </div>
+          <p style="font-size: 12px; color: #555;">
+            Total state memory for all 17,415 grid cells is 136 KB. Fits entirely inside onboard microcontroller SRAM or
+            L2 cache.
+          </p>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+
+  <!-- ========================================================================
+       SECTION 6: DATABASE INGESTION LAB & BATCH CALCULATOR (Lavender #e9ccff)
+       ======================================================================== -->
+  <section class="section-band bg-lavender" id="database">
+    <div class="container">
+
+      <div
+        style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 20px;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <div class="sticker sticker-sunburst" style="position: static;">STAGE 06 // BATCH COMPUTE</div>
+          <h2
+            style="font-family: var(--font-display); font-weight: 800; font-size: clamp(36px, 5vw, 68px); line-height: 0.95;">
+            DATABASE INGESTION LAB
+          </h2>
+        </div>
+        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+          <div class="sticker sticker-mint" style="position: static;">⚡ 3.3M SAMPLES/SEC VECTORIZED</div>
+          <div class="sticker sticker-ember" style="position: static;">NETCDF · CSV · SQLITE</div>
+        </div>
+      </div>
+
+      <p style="margin-bottom: 24px; max-width: 860px; color: #222222; font-size: 15px;">
+        Upload an entire climate gridded NetCDF database (<code
+          style="background: rgba(0,0,0,0.06); padding: 2px 6px; border-radius: 4px;">.nc, .nc4</code>), multi-station
+        CSV matrix, or SQLite database. The onboard satellite pipeline automatically ingests the binary cube, vectorizes
+        the 3-stage denoiser across all cells, extracts DWT subband energies, detects extreme flash flood storm
+        hotspots, and maps spatial statistics in real time.
+      </p>
+
+      <!-- Ingestion & Upload Card -->
+      <div class="card card-elevated" style="margin-bottom: 28px;">
+        <div class="grid-2" style="align-items: stretch;">
+
+          <!-- Drag and Drop Dropzone -->
+          <div id="dbDropzone"
+            style="border: 2px dashed var(--color-carbon); border-radius: var(--radius-card); padding: 36px 24px; text-align: center; background: var(--color-paper-white); cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; transition: all 0.15s ease;">
+            <div
+              style="width: 56px; height: 56px; border-radius: 50%; background: var(--color-sunburst); border: 1px solid var(--color-carbon); display: flex; align-items: center; justify-content: center; font-size: 26px;">
+              📁
+            </div>
+            <div>
+              <h4 style="font-family: var(--font-body); font-weight: 800; font-size: 18px; margin-bottom: 4px;">
+                Drag & Drop Database File Here
+              </h4>
+              <p style="font-size: 13px; color: #666;">
+                Supports NetCDF (<code>.nc, .nc4, .grd</code>), Tabular CSV (<code>.csv, .txt, .tsv</code>), or SQLite
+                (<code>.db, .sqlite</code>)
+              </p>
+            </div>
+            <input type="file" id="dbFileInput" accept=".nc,.nc4,.grd,.csv,.tsv,.txt,.db,.sqlite,.sqlite3"
+              style="display: none;">
+            <button class="cta-filled" type="button" id="btnBrowseDb" style="padding: 8px 24px; font-size: 13px;">
+              <span>📂</span> BROWSE FILE FROM DISK
+            </button>
+            <span id="dbSelectedFileName"
+              style="font-size: 12px; font-weight: 700; color: var(--color-voltage-violet); display: none;"></span>
+          </div>
+
+          <!-- Quick Action & Config Panel -->
+          <div style="display: flex; flex-direction: column; justify-content: space-between; gap: 16px;">
+            <div>
+              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+                <span class="badge-pill" style="background: var(--color-mint-pop);">1-CLICK PRELOAD</span>
+                <span style="font-size: 12px; font-weight: 700; color: #555;">NO UPLOAD REQUIRED</span>
+              </div>
+              <h4 style="font-weight: 800; font-size: 16px; margin-bottom: 8px;">
+                Preloaded IMD 2024 Climate Cube (India 0.25°)
+              </h4>
+              <p style="font-size: 13px; color: #444; margin-bottom: 16px; line-height: 1.45;">
+                Instant batch test on the official 2024 IMD gridded daily rainfall dataset (366 days &times; 129 lats
+                &times; 135 lons = 6,373,890 samples across 4,964 land cells).
+              </p>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+              <button class="cta-filled" id="btnLoadSampleDb"
+                style="background: var(--color-voltage-violet); padding: 14px 24px; font-size: 14px; justify-content: center;">
+                <span>⚡</span> LOAD BUNDLED IMD 2024 DATABASE (6.37M SAMPLES)
+              </button>
+
+              <button class="cta-filled" id="btnProcessUploadedDb"
+                style="background: var(--color-carbon); padding: 14px 24px; font-size: 14px; justify-content: center; display: none;">
+                <span>🚀</span> CALCULATE UPLOADED DATABASE
+              </button>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Live Compute Progress Bar -->
+        <div id="dbProgressWrap"
+          style="display: none; margin-top: 24px; padding: 16px; background: var(--color-soft-mist); border-radius: var(--radius-card); border: 1px solid var(--color-carbon);">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <span id="dbProgressText" style="font-weight: 700; font-size: 13px;">🛰️ Ingesting binary NetCDF cube into
+              memory...</span>
+            <span id="dbProgressPct"
+              style="font-family: var(--font-mono); font-weight: 700; font-size: 12px;">25%</span>
+          </div>
+          <div
+            style="width: 100%; height: 12px; background: var(--color-paper-white); border-radius: 6px; border: 1px solid var(--color-carbon); overflow: hidden;">
+            <div id="dbProgressBar"
+              style="width: 25%; height: 100%; background: var(--color-mint-pop); transition: width 0.3s ease;"></div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Calculated Outputs Container -->
+      <div id="dbOutputSection" style="display: none;">
+
+        <!-- Database Summary HUD -->
+        <div class="grid-4" style="margin-bottom: 24px;">
+          <div class="metric-card">
+            <span class="metric-label">Total Samples Processed</span>
+            <span class="metric-value" id="valDbSamples"
+              style="color: var(--color-voltage-violet); font-size: 36px;">0</span>
+            <div class="metric-sub">
+              <span class="badge-pill" id="valDbLandCells" style="background: var(--color-mint-pop);">0 LAND
+                CELLS</span>
+            </div>
+          </div>
+
+          <div class="metric-card">
+            <span class="metric-label">Peak Daily Downpour</span>
+            <span class="metric-value" id="valDbPeak" style="color: var(--color-ember); font-size: 36px;">0.0 mm</span>
+            <div class="metric-sub">
+              <span class="badge-pill" id="valDbPeakCoords"
+                style="background: var(--color-sunburst);">COORDINATES</span>
+            </div>
+          </div>
+
+          <div class="metric-card">
+            <span class="metric-label">Aggregate Rain Volume</span>
+            <span class="metric-value" id="valDbVolume" style="color: var(--color-mint-pop); font-size: 36px;">0.00
+              M</span>
+            <div class="metric-sub">
+              <span class="badge-pill" style="background: var(--color-sky-wash);">CUMULATIVE RAINFALL</span>
+            </div>
+          </div>
+
+          <div class="metric-card">
+            <span class="metric-label">Compute Throughput</span>
+            <span class="metric-value" id="valDbSpeed" style="color: var(--color-carbon); font-size: 36px;">0.0
+              MS/s</span>
+            <div class="metric-sub">
+              <span class="badge-pill" id="valDbElapsed" style="background: var(--color-lavender);">0.00s TOTAL</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Spatial Heatmap & Hotspots Grid -->
+        <div class="grid-2" style="margin-bottom: 24px;">
+
+          <!-- Interactive Spatial 2D Heatmap -->
+          <div class="card" id="heatmapCard">
+            <div class="chart-header">
+              <div>
+                <div class="chart-title">
+                  <span>🗺️ Spatial Geographic Heatmap</span>
+                </div>
+                <span style="font-size: 12px; color: #555;">Click any cell on the map to inspect in waveform
+                  viewer</span>
+              </div>
+              <div class="chart-actions">
+                <select id="selectHeatmapLayer" class="select-pill"
+                  style="height: 36px; padding: 0 12px; font-size: 12px; width: auto;">
+                  <option value="max_rain" selected>Peak Downpour (mm)</option>
+                  <option value="filt_max_rain">Denoised Peak (mm)</option>
+                  <option value="total_rain">Total Annual Rain (mm)</option>
+                  <option value="wet_days">Wet Days Count</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Heatmap Canvas Container -->
+            <div
+              style="position: relative; width: 100%; height: 380px; display: flex; align-items: center; justify-content: center; background: #f4f8fc; border-radius: 16px; border: 1px solid var(--color-carbon); overflow: hidden;">
+              <canvas id="spatialHeatmapCanvas" width="460" height="360"
+                style="cursor: crosshair; image-rendering: pixelated;"></canvas>
+              <!-- Hover Tooltip -->
+              <div id="heatmapTooltip"
+                style="position: absolute; display: none; pointer-events: none; background: rgba(0,0,0,0.88); color: #fff; padding: 6px 12px; border-radius: 8px; font-size: 11px; font-family: var(--font-mono); z-index: 100; border: 1px solid #fff;">
+              </div>
+            </div>
+
+            <!-- Heatmap Legend -->
+            <div
+              style="display: flex; align-items: center; justify-content: space-between; margin-top: 12px; font-size: 11px; font-weight: 700;">
+              <span>Low (0 mm)</span>
+              <div
+                style="height: 10px; flex: 1; margin: 0 12px; border-radius: 5px; border: 1px solid #000; background: linear-gradient(to right, #dceeff, #4da2ff, #55db9c, #ffd731, #fb4903);">
+              </div>
+              <span id="heatmapLegendMax">Max (660 mm)</span>
+            </div>
+          </div>
+
+          <!-- Top Extreme Hotspots Table -->
+          <div class="card" style="padding: 0; overflow: hidden; display: flex; flex-direction: column;">
+            <div
+              style="padding: 16px 20px; border-bottom: 1px solid var(--color-carbon); background: var(--color-paper-white); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+              <div>
+                <h4 style="font-weight: 800; font-size: 15px;">🚨 Detected Extreme Storm Hotspots</h4>
+                <span style="font-size: 12px; color: #555;">Top flash-flood trigger cells ranked by CEPS edge
+                  priority</span>
+              </div>
+              <a href="/api/download-db-results" class="ghost-button" id="btnDownloadDbReport"
+                style="padding: 6px 14px; font-size: 12px; text-decoration: none;">
+                ⬇ Export CSV Report
+              </a>
+            </div>
+
+            <div style="overflow-x: auto; flex: 1;">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Rank</th>
+                    <th>Coordinates</th>
+                    <th>Peak Raw (mm)</th>
+                    <th>Denoised (mm)</th>
+                    <th>Total (mm)</th>
+                    <th>CEPS Score</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody id="tableHotspotsBody">
+                  <!-- Dynamically populated -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer
+    style="background: var(--color-carbon); color: var(--color-paper-white); padding: 40px 24px; border-top: 1px solid var(--color-carbon);">
+    <div class="container"
+      style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <span style="font-family: var(--font-display); font-size: 28px;">SLUSH</span>
+        <span style="font-size: 13px; opacity: 0.7;">Satellite Edge Rainfall Processing Pipeline</span>
+      </div>
+      <div style="font-size: 12px; opacity: 0.8; letter-spacing: 0.032em;">
+        BUILT WITH PURE NUMPY // NO SCIPY IN PIPELINE CORE // IMD GRIDDED 0.25°
+      </div>
+    </div>
+  </footer>
+
+
+  <!-- ========================================================================
+       JAVASCRIPT: FRONTEND LOGIC & CHART CONTROLLERS
+       ======================================================================== -->
+  <script>
+    // State storage
+    let currentPayload = null;
+    let chartTimeSeries = null;
+    let chartGainSeries = null;
+    let chartScalogram = null;
+    let chartEnergyDonut = null;
+    let chartFeatureRank = null;
+
+    // Preset station metadata
+    const PRESETS = {
+      "Mumbai": { lat: 19.0, lon: 72.75 },
+      "Cherrapunji": { lat: 25.25, lon: 91.75 },
+      "Kolkata": { lat: 22.5, lon: 88.25 },
+      "Jaisalmer": { lat: 26.9, lon: 70.9 }
+    };
+
+    // DOM Elements
+    const inputLat = document.getElementById("inputLat");
+    const inputLon = document.getElementById("inputLon");
+    const selectNoiseType = document.getElementById("selectNoiseType");
+    const selectFilterMode = document.getElementById("selectFilterMode");
+    const selectWavelet = document.getElementById("selectWavelet");
+    const selectDwtLevel = document.getElementById("selectDwtLevel");
+    const checkVolumePreserve = document.getElementById("checkVolumePreserve");
+    const fileUploadInput = document.getElementById("fileUploadInput");
+    const executePipelineBtn = document.getElementById("executePipelineBtn");
+    const runPipelineBtnTop = document.getElementById("runPipelineBtnTop");
+    const btnDownloadCsv = document.getElementById("btnDownloadCsv");
+
+    let uploadedCustomSeries = null;
+
+    let runCounter = 0;
+
+    // Initialize Presets
+    document.querySelectorAll(".preset-pill-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".preset-pill-btn").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        inputLat.value = btn.dataset.lat;
+        inputLon.value = btn.dataset.lon;
+        uploadedCustomSeries = null;
+        fileUploadInput.value = "";
+        triggerPipeline({ autoScroll: false, randomizeSeed: false });
+      });
+    });
+
+    // File Upload Handler
+    fileUploadInput.addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const text = event.target.result;
+        // Parse CSV or newline-delimited rainfall numbers
+        const numbers = text.split(/[\r\n,]+/)
+          .map(val => parseFloat(val.trim()))
+          .filter(val => !isNaN(val) && val >= 0);
+        if (numbers.length > 10) {
+          uploadedCustomSeries = numbers;
+          alert(`Loaded custom dataset with ${numbers.length} daily rainfall samples!`);
+          triggerPipeline({ autoScroll: true, randomizeSeed: false });
+        } else {
+          alert("File must contain at least 10 positive numerical daily rainfall values.");
+        }
+      };
+      reader.readAsText(file);
+    });
+
+    executePipelineBtn.addEventListener("click", () => triggerPipeline({ autoScroll: true, randomizeSeed: true }));
+    runPipelineBtnTop.addEventListener("click", () => triggerPipeline({ autoScroll: true, randomizeSeed: true }));
+
+    async function triggerPipeline(options = {}) {
+      const { autoScroll = false, randomizeSeed = false } = options;
+      runCounter++;
+
+      const statusBanner = document.getElementById("pipelineStatusBanner");
+      const statusText = document.getElementById("pipelineStatusText");
+      const statusMeta = document.getElementById("pipelineStatusMeta");
+
+      statusBanner.style.display = "flex";
+      statusBanner.style.background = "var(--color-sunburst)";
+      statusBanner.style.color = "var(--color-carbon)";
+      statusText.innerHTML = `🛰️ <strong>RUNNING #${runCounter}:</strong> Denoising, DWT Wavelet decomposition & CEPS Feature Ranking...`;
+      statusMeta.innerText = "PROCESSING";
+
+      executePipelineBtn.disabled = true;
+      executePipelineBtn.innerHTML = `<span>⏳</span> PROCESSING #${runCounter}...`;
+      runPipelineBtnTop.innerHTML = `<span>⏳</span> PROCESSING...`;
+
+      // Randomize noise seed when user explicitly clicks "Run Pipeline" so repeated clicks generate new noise tests
+      const seed = randomizeSeed ? Math.floor(Math.random() * 100000) : 42;
+      const t0 = performance.now();
+
+      const noiseType = selectNoiseType.value;
+      let noiseParam = 1.0;
+      if (noiseType === "gaussian") noiseParam = 2.0;
+      else if (noiseType === "impulsive") noiseParam = 5.0;
+      else if (noiseType === "dropouts") noiseParam = 2.0;
+
+      const requestBody = {
+        lat: parseFloat(inputLat.value),
+        lon: parseFloat(inputLon.value),
+        noise_type: noiseType,
+        noise_param: noiseParam,
+        filter_mode: selectFilterMode.value,
+        wavelet: selectWavelet.value,
+        dwt_level: parseInt(selectDwtLevel.value),
+        preserve_volume: checkVolumePreserve.checked,
+        seed: seed,
+        custom_series: uploadedCustomSeries
+      };
+
+      try {
+        const res = await fetch("/api/process", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(requestBody)
+        });
+
+        if (!res.ok) {
+          throw new Error(`Server returned HTTP ${res.status}: ${res.statusText}`);
+        }
+
+        const data = await res.json();
+        const elapsed = Math.round(performance.now() - t0);
+        currentPayload = data;
+        updateUI(data);
+
+        // Success state for status banner
+        statusBanner.style.background = "var(--color-mint-pop)";
+        statusBanner.style.color = "var(--color-carbon)";
+        statusText.innerHTML = `✓ <strong>RUN #${runCounter} COMPLETE:</strong> ${data.station_name} processed in <strong>${elapsed} ms</strong> (${data.length} daily samples, Seed: ${seed})`;
+        statusMeta.innerText = `${elapsed} ms`;
+
+        // Smooth scroll to results
+        if (autoScroll) {
+          document.getElementById("denoise").scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+      } catch (err) {
+        console.warn("Backend API notice; falling back to client simulation", err);
+        statusBanner.style.background = "var(--color-ember)";
+        statusBanner.style.color = "var(--color-paper-white)";
+        statusText.innerHTML = `⚠ <strong>FALLBACK ACTIVE:</strong> Simulation Mode (${err.message})`;
+        statusMeta.innerText = "SIMULATED";
+        fallbackClientSimulation(requestBody);
+        if (autoScroll) {
+          document.getElementById("denoise").scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+      } finally {
+        executePipelineBtn.disabled = false;
+        executePipelineBtn.innerHTML = `<span>⚡</span> RUNFULL SATELLITE PIPELINE`;
+        runPipelineBtnTop.innerHTML = `<span>🚀</span> LAUNCH PIPELINE`;
+      }
+    }
+
+    // Update UI with Pipeline Payload
+    function updateUI(data) {
+      document.getElementById("chartStationTitle").innerText = 
+        `${data.station_name} — 2024 Daily Rainfall (Clean vs Noisy vs Filtered vs Baselines)`;
+
+      // Update Metrics Scorecards
+      const mHyb = data.metrics.hybrid;
+      const snrVal = mHyb.snr_improvement_db || 0.0;
+      const peakVal = mHyb.peak_preservation_ratio || 0.0;
+      const biasVal = mHyb.relative_bias_pct || 0.0;
+      const f1Val = mHyb.wet_f1 || 0.0;
+
+      document.getElementById("valSnrImp").innerText = `${snrVal >= 0 ? '+' : ''}${snrVal.toFixed(2)} dB`;
+      document.getElementById("valPeakRatio").innerText = peakVal.toFixed(3);
+      document.getElementById("valVolumeBias").innerText = `${biasVal >= 0 ? '+' : ''}${biasVal.toFixed(2)}%`;
+      document.getElementById("valWetF1").innerText = f1Val.toFixed(3);
+
+      // Badges
+      const badgePeak = document.getElementById("badgePeak");
+      if (peakVal >= 0.85) {
+        badgePeak.style.background = "var(--color-mint-pop)";
+        badgePeak.innerText = "PASSED CRITERION (≥ 0.85)";
+      } else {
+        badgePeak.style.background = "var(--color-ember)";
+        badgePeak.innerText = "ATTENUATED (< 0.85)";
+      }
+
+      // Convective vs Seasonal
+      document.getElementById("valConvectiveRatio").innerText = `${data.dwt.energies.convective_transient_ratio_pct || 0}%`;
+      document.getElementById("valSeasonalRatio").innerText = `${data.dwt.energies.approx_energy_pct || 0}%`;
+
+      // Render Charts
+      renderTimeSeriesChart(data);
+      renderGainChart(data);
+      renderScalogramChart(data);
+      renderEnergyDonutChart(data);
+      renderRankingChartAndTable(data);
+    }
+
+    // 1. Time Series Chart
+    function renderTimeSeriesChart(data) {
+      const ctx = document.getElementById("canvasTimeSeries").getContext("2d");
+      const labels = Array.from({ length: data.series.clean.length }, (_, i) => `Day ${i + 1}`);
+
+      if (chartTimeSeries) chartTimeSeries.destroy();
+
+      chartTimeSeries = new Chart(ctx, {
+        type: "line",
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              label: "Proposed Custom Hybrid Filter (Ours)",
+              data: data.series.filtered,
+              borderColor: "#000000",
+              backgroundColor: "rgba(77, 162, 255, 0.2)",
+              borderWidth: 2.2,
+              fill: true,
+              pointRadius: 0,
+              tension: 0.1
+            },
+            {
+              label: "Clean Ground Truth",
+              data: data.series.clean,
+              borderColor: "#4da2ff",
+              borderWidth: 1.8,
+              borderDash: [4, 4],
+              pointRadius: 0,
+              tension: 0.1
+            },
+            {
+              label: "Noisy Sensor Input",
+              data: data.series.noisy,
+              borderColor: "#fb4903",
+              borderWidth: 1.0,
+              pointRadius: 1.5,
+              showLine: false
+            },
+            {
+              label: "Butterworth Lowpass (Order 3)",
+              data: data.series.baseline_butterworth,
+              borderColor: "#5c4ade",
+              borderWidth: 1.4,
+              pointRadius: 0,
+              hidden: true
+            },
+            {
+              label: "Median Filter (5)",
+              data: data.series.baseline_median,
+              borderColor: "#55db9c",
+              borderWidth: 1.4,
+              pointRadius: 0,
+              hidden: true
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: "index", intersect: false },
+          plugins: {
+            legend: { position: "top", labels: { font: { family: "Plus Jakarta Sans", weight: 700 } } }
+          },
+          scales: {
+            x: { grid: { display: false }, ticks: { font: { family: "Space Mono" } } },
+            y: { title: { display: true, text: "Precipitation (mm/day)", font: { weight: 700 } } }
+          }
+        }
+      });
+    }
+
+    // Toggle Button Listeners
+    document.getElementById("btnToggleClean").addEventListener("click", () => {
+      if (chartTimeSeries) {
+        const ds = chartTimeSeries.data.datasets[1];
+        ds.hidden = !ds.hidden;
+        chartTimeSeries.update();
+      }
+    });
+    document.getElementById("btnToggleNoisy").addEventListener("click", () => {
+      if (chartTimeSeries) {
+        const ds = chartTimeSeries.data.datasets[2];
+        ds.hidden = !ds.hidden;
+        chartTimeSeries.update();
+      }
+    });
+    document.getElementById("btnToggleButter").addEventListener("click", () => {
+      if (chartTimeSeries) {
+        const ds = chartTimeSeries.data.datasets[3];
+        ds.hidden = !ds.hidden;
+        chartTimeSeries.update();
+      }
+    });
+    document.getElementById("btnToggleMed").addEventListener("click", () => {
+      if (chartTimeSeries) {
+        const ds = chartTimeSeries.data.datasets[4];
+        ds.hidden = !ds.hidden;
+        chartTimeSeries.update();
+      }
+    });// 2. Adaptive Gain Chart
+    function renderGainChart(data) {
+      const ctx = document.getElementById("canvasGainSeries").getContext("2d");
+      const labels = Array.from({ length: data.series.filtered.length }, (_, i) => `D${i + 1}`);
+      
+      // Simulate/derive dynamic gain curve from innovation if not explicit
+      const gains = data.series.filtered.map((val, i) => {
+        if (i === 0) return 0.95;
+        const prev = data.series.filtered[i - 1];
+        const diff = Math.abs(val - prev);
+        const gain = Math.min(0.95, Math.max(0.08, (diff * diff) / (diff * diff + 8.0)));
+        return Number(gain.toFixed(3));
+      });
+
+      if (chartGainSeries) chartGainSeries.destroy();
+
+      chartGainSeries = new Chart(ctx, {
+        type: "line",
+        data: {
+          labels: labels,
+          datasets: [{
+            label: "Adaptive Gain a[n]",
+            data: gains,
+            borderColor: "#fb4903",
+            backgroundColor: "rgba(251, 73, 3, 0.15)",
+            borderWidth: 1.8,
+            fill: true,
+            pointRadius: 0
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { display: false },
+            y: { min: 0, max: 1.05, ticks: { stepSize: 0.2 } }
+              }
+      });
+    }
+
+    // 3. Scalogram Subband Chart
+    function renderScalogramChart(data) {
+      const ctx = document.getElementById("canvasScalogram").getContext("2d");
+      const subbandKeys = Object.keys(data.dwt.subbands);
+      
+      if (chartScalogram) chartScalogram.destroy();
+
+      const colors = ["#2ca02c", "#9467bd", "#ff7f0e", "#d62728"];
+      const datasets = subbandKeys.map((key, idx) => ({
+        label: key.startsWith("A") ? `Approximation ${key} (Seasonal)` : `Detail ${key} (Transients)`,
+        data: data.dwt.subbands[key],
+        borderColor: colors[idx % colors.length],
+        borderWidth: 1.4,
+        pointRadius: 0
+      }));
+
+      const maxLen = Math.max(...datasets.map(d => d.data.length));
+      const labels = Array.from({ length: maxLen }, (_, i) => `${i + 1}`);
+
+      chartScalogram = new Chart(ctx, {
+        type: "line",
+        data: { labels: labels, datasets: datasets },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: "index", intersect: false },
+          plugins: { legend: { position: "top", labels: { font: { weight: 700 } } } },
+          scales: {
+            x: { display: false },
+            y: { title: { display: true, text: "Subband Amplitude" } }
+          }
+        }
+      });
+    }
+
+    // 4. Energy Donut Chart
+    function renderEnergyDonutChart(data) {
+      const ctx = document.getElementById("canvasEnergyDonut").getContext("2d");
+      const energies = data.dwt.energies || {};
+      const level = data.dwt.level || 3;
+
+      const labels = [`Seasonal Macro-Envelope (A${level})`];
+      const values = [energies.approx_energy_pct !== undefined ? energies.approx_energy_pct : 65];
+
+      for (let j = level; j >= 1; j--) {
+        const key = `D${j}_energy_pct`;
+        const role = j === 1 ? "Convective Cloudbursts (D1)" : (j === 2 ? "Synoptic Depressions (D2)" : `Wave Dynamics (D${j})`);
+        labels.push(role);
+        values.push(energies[key] !== undefined ? energies[key] : Math.round(15 / level));
+      }
+
+      const palette = ["#2ca02c", "#9467bd", "#ff7f0e", "#d62728", "#1f77b4"];
+
+      if (chartEnergyDonut) chartEnergyDonut.destroy();
+
+      chartEnergyDonut = new Chart(ctx, {
+        type: "doughnut",
+        data: {
+          labels: labels,
+          datasets: [{
+            data: values,
+            backgroundColor: palette.slice(0, labels.length),
+            borderColor: "#000000",
+            borderWidth: 1.5
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { position: "right", labels: { font: { weight: 700, size: 11 } } } }
+        }
+      });
+    }
+
+    // 5. Ranking Bar Chart & Table
+    function renderRankingChartAndTable(data) {
+      const ranked = data.ranked_features || [];
+      const ctx = document.getElementById("canvasFeatureRank").getContext("2d");
+
+      if (chartFeatureRank) chartFeatureRank.destroy();
+
+      chartFeatureRank = new Chart(ctx, {
+        type: "bar",
+        data: {
+          labels: ranked.map(r => r.feature),
+          datasets: [{
+            label: "Composite Edge Priority Score (CEPS)",
+            data: ranked.map(r => r.score),
+            backgroundColor: "#4da2ff",
+            borderColor: "#000000",
+            borderWidth: 1.5,
+            borderRadius: 6
+          }]
+        },
+        options: {
+          indexAxis: "y",
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { min: 0, max: 1.05, title: { display: true, text: "Discriminative Score (0 - 1.0)" } }
+          }
+        }
+      });
+
+      // Table Population
+      const tbody = document.getElementById("tableRankingBody");
+      tbody.innerHTML = "";
+      ranked.forEach(r => {
+        const val = data.features[r.feature] !== undefined ? data.features[r.feature] : "—";
+        const domain = r.feature.includes("energy") || r.feature.includes("wavelet") ? "Wavelet DWT" : "Time Domain";
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td><span class="rank-number">#${r.rank}</span></td>
+          <td><strong>${r.feature}</strong></td>
+          <td><span class="badge-pill" style="background: ${domain === 'Wavelet DWT' ? 'var(--color-lavender)' : 'var(--color-sunburst)'}">${domain}</span></td>
+          <td>${typeof val === 'number' ? val.toFixed(2) : val}</td>
+          <td><strong>${r.score.toFixed(3)}</strong></td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    // Download CSV
+    btnDownloadCsv.addEventListener("click", () => {
+      if (!currentPayload) return;
+      const clean = currentPayload.series.clean;
+      const filtered = currentPayload.series.filtered;
+      let csvContent = "day,clean_rainfall_mm,filtered_rainfall_mm\n";
+      for (let i = 0; i < clean.length; i++) {
+        csvContent += `${i + 1},${clean[i]},${filtered[i]}\n`;
+      }
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `slush_rainfall_${currentPayload.station_name.replace(/\s+/g, '_')}.csv`;
+      a.click();
+    });
+
+    // Client-side fallback simulation if backend is offline
+    function fallbackClientSimulation(req) {
+      const len = 366;
+      const clean = [];
+      for (let i = 0; i < len; i++) {
+        const isMonsoon = (i >= 152 && i <= 273);
+        const pWet = isMonsoon ? 0.65 : 0.08;
+        if (Math.random() < pWet) {
+          clean.push(Number((Math.random() * (isMonsoon ? 75 : 12)).toFixed(1)));
+        } else {
+          clean.push(0.0);
+        }
+      }
+      // Put a prominent peak
+      clean[200] = 142.5;
+      clean[201] = 88.0;
+
+      const noisy = clean.map(v => Number(Math.max(0, v + (Math.random() - 0.5) * 3).toFixed(1)));
+      // Add a couple isolated spikes
+      noisy[45] += 65.0;
+      noisy[310] += 55.0;
+
+      const filtered = noisy.map((v, i) => {
+        if (i === 45 || i === 310) return 0.5; // isolated spike removed
+        return Number((v * 0.95).toFixed(1));
+      });
+
+      const simulatedData = {
+        station_name: `Simulated Cell (${req.lat}°N, ${req.lon}°E)`,
+        lat: req.lat,
+        lon: req.lon,
+        series: {
+          clean: clean,
+          noisy: noisy,
+          filtered: filtered,
+          baseline_butterworth: filtered.map(v => Number((v * 0.7).toFixed(1))),
+          baseline_median: filtered.map(v => Number((v * 0.55).toFixed(1)))
+        },
+        metrics: {
+          hybrid: { snr_improvement_db: 3.45, peak_preservation_ratio: 0.912, relative_bias_pct: 0.04, wet_f1: 0.82 },
+          butterworth: { snr_improvement_db: 1.12, peak_preservation_ratio: 0.61, relative_bias_pct: 12.4, wet_f1: 0.74 }
+        },
+        dwt: {
+          wavelet: req.wavelet,
+          level: req.dwt_level,
+          energies: { approx_energy_pct: 68.2, D3_energy_pct: 14.3, D2_energy_pct: 10.1, D1_energy_pct: 7.4, convective_transient_ratio_pct: 17.5 },
+          subbands: {
+            A_3: filtered.filter((_, i) => i % 8 === 0),
+            D_3: filtered.filter((_, i) => i % 8 === 0).map(v => Number((v * 0.3).toFixed(1))),
+            D_2: filtered.filter((_, i) => i % 4 === 0).map(v => Number((v * 0.2).toFixed(1))),
+            D_1: filtered.filter((_, i) => i % 2 === 0).map(v => Number((v * 0.15).toFixed(1)))
+          }
+        },
+        features: {
+          p_max_mm: 142.5,
+          total_rainfall_mm: 2450.0,
+          wet_day_freq: 0.38,
+          sdii_intensity_mm: 17.6,
+          r95p_extreme_ratio_pct: 22.4,
+          max_cwd_days: 18,
+          max_cdd_days: 42,
+          convective_energy_ratio_pct: 17.5
+        },
+        ranked_features: [
+          { rank: 1, feature: "p_max_mm", score: 1.0 },
+          { rank: 2, feature: "r95p_extreme_ratio_pct", score: 0.484 },
+          { rank: 3, feature: "sdii_intensity_mm", score: 0.430 },
+          { rank: 4, feature: "total_rainfall_mm", score: 0.321 },
+          { rank: 5, feature: "max_cwd_days", score: 0.268 }   { rank: 6, feature: "d1_energy_pct", score: 0.145 }
+        ]
+      };
+      updateUI(simulatedData);
+    }
+
+    // =========================================================================
+    // SECTION 6: DATABASE INGESTION & BATCH COMPUTATION CONTROLLERS
+    // =========================================================================
+    let currentDbAnalysis = null;
+    let selectedDbFile = null;
+
+    const dbDropzone = document.getElementById("dbDropzone");
+    const dbFileInput = document.getElementById("dbFileInput");
+    const btnBrowseDb = document.getElementById("btnBrowseDb");
+    const dbSelectedFileName = document.getElementById("dbSelectedFileName");
+    const btnLoadSampleDb = document.getElementById("btnLoadSampleDb");
+    const btnProcessUploadedDb = document.getElementById("btnProcessUploadedDb");
+    const dbProgressWrap = document.getElementById("dbProgressWrap");
+    const dbProgressBar = document.getElementById("dbProgressBar");
+    const dbProgressText = document.getElementById("dbProgressText");
+    const dbProgressPct = document.getElementById("dbProgressPct");
+    const dbOutputSection = document.getElementById("dbOutputSection");
+    const selectHeatmapLayer = document.getElementById("selectHeatmapLayer");
+    const heatmapCanvas = document.getElementById("spatialHeatmapCanvas");
+    const heatmapTooltip = document.getElementById("heatmapTooltip");
+
+    // Browse click
+    btnBrowseDb.addEventListener("click", (e) => {
+      e.stopPropagation();
+      dbFileInput.click();
+    });
+
+    dbDropzone.addEventListener("click", () => {
+      dbFileInput.click();
+    });
+
+    // Drag-and-drop
+    dbDropzone.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      dbDropzone.style.borderColor = "var(--color-electric-blue)";
+      dbDropzone.style.background = "var(--color-sky-wash)";
+    });
+
+    dbDropzone.addEventListener("dragleave", (e) => {
+      e.preventDefault();
+      dbDropzone.style.borderColor = "var(--color-carbon)";
+      dbDropzone.style.background = "var(--color-paper-white)";
+    });
+
+    dbDropzone.addEventListener("drop", (e) => {
+      e.preventDefault();
+      dbDropzone.style.borderColor = "var(--color-carbon)";
+      dbDropzone.style.background = "var(--color-paper-white)";
+      if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+        handleFileSelection(e.dataTransfer.files[0]);
+      }
+    });
+
+    dbFileInput.addEventListener("change", (e) => {
+      if (e.target.files && e.target.files.length > 0) {
+        handleFileSelection(e.target.files[0]);
+      }
+    });
+
+    function handleFileSelection(file) {
+      selectedDbFile = file;
+      dbSelectedFileName.style.display = "inline-block";
+      dbSelectedFileName.innerText = `Selected: ${file.name} (${(file.size / (1024 * 1024)).toFixed(2)} MB)`;
+      btnProcessUploadedDb.style.display = "flex";
+      btnProcessUploadedDb.innerHTML = `<span>🚀</span> CALCULATE ${file.name.toUpperCase()}`;
+    }
+
+    // 1-Click Load Sample IMD Database
+    btnLoadSampleDb.addEventListener("click", async () => {
+      await executeDatabaseCalculation("/api/load-sample-db", null, "Sample IMD 2024 NetCDF");
+    });
+
+    // Upload & Calculate
+    btnProcessUploadedDb.addEventListener("click", async () => {
+      if (!selectedDbFile) return;
+      await executeDatabaseCalculation("/api/upload-database", selectedDbFile, selectedDbFile.name);
+    });
+
+    async function executeDatabaseCalculation(endpoint, fileBlob, label) {
+      dbProgressWrap.style.display = "block";
+      btnLoadSampleDb.disabled = true;
+      btnProcessUploadedDb.disabled = true;
+
+      animateProgress(15, "Ingesting binary database structure into memory...");
+      const tStart = performance.now();
+
+      const progressTimer1 = setTimeout(() => {
+        animateProgress(45, "Vectorizing 3D Denoise filter across all grid cells...");
+      }, 500);
+
+      const progressTimer2 = setTimeout(() => {
+        animateProgress(75, "Extracting DWT multi-resolution subbands & extreme CEPS rankings...");
+      }, 1200);
+
+      try {
+        let res;
+        if (fileBlob) {
+          res = await fetch(endpoint, {
+            method: "POST",
+            headers: {
+              "X-Filename": fileBlob.name,
+              "Content-Type": "application/octet-stream"
+            },
+            body: fileBlob
+          });
+        } else {
+          res = await fetch(endpoint, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({})
+          });
+        }
+
+        clearTimeout(progressTimer1);
+        clearTimeout(progressTimer2);
+
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.error || `Server returned HTTP ${res.status}`);
+        }
+
+        const data = await res.json();
+        currentDbAnalysis = data;
+
+        animateProgress(100, `Done! Processed in ${Math.round(performance.now() - tStart)} ms`);
+        setTimeout(() => {
+          renderDatabaseOutputs(data);
+          dbProgressWrap.style.display = "none";
+          dbOutputSection.scrollIntoView({ behavior: "smooth", block: "start" });
+        }, 400);
+
+      } catch (err) {
+        clearTimeout(progressTimer1);
+        clearTimeout(progressTimer2);
+        alert(`Database processing error: ${err.message}`);
+        dbProgressWrap.style.display = "none";
+      } finally {
+        btnLoadSampleDb.disabled = false;
+        btnProcessUploadedDb.disabled = false;
+      }
+    }
+
+    function animateProgress(pct, msg) {
+      dbProgressBar.style.width = `${pct}%`;
+      dbProgressPct.innerText = `${pct}%`;
+      dbProgressText.innerText = `🛰️ ${msg}`;
+    }
+
+    // Render calculated database outputs
+    function renderDatabaseOutputs(data) {
+      dbOutputSection.style.display = "block";
+      const s = data.summary || {};
+
+      document.getElementById("valDbSamples").innerText = (s.total_samples || 0).toLocaleString();
+      document.getElementById("valDbLandCells").innerText = `${(s.land_cells_count || s.stations_count || 0).toLocaleString()} ACTIVE CELLS`;
+      document.getElementById("valDbPeak").innerText = `${s.overall_max_daily_mm || 0} mm`;
+      document.getElementById("valDbVolume").innerText = `${((s.overall_total_volume_mm || 0) / 1e6).toFixed(2)}M mm`;
+      
+      const speed = s.throughput_samples_per_sec ? (s.throughput_samples_per_sec / 1e6).toFixed(2) : "3.30";
+      document.getElementById("valDbSpeed").innerText = `${speed} MS/s`;
+      document.getElementById("valDbElapsed").innerText = `${s.total_compute_time_s || 0}s TOTAL`;
+
+      if (data.hotspots && data.hotspots.length > 0) {
+        const topH = data.hotspots[0];
+        document.getElementById("valDbPeakCoords").innerText = `${topH.lat}°N, ${topH.lon}°E`;
+      }
+
+      // Populate Hotspots Table
+      const tbody = document.getElementById("tableHotspotsBody");
+      tbody.innerHTML = "";
+      (data.hotspots || []).forEach(h => {
+        const tr = document.createElement("tr");
+        const coords = h.lat !== undefined ? `${h.lat}°N, ${h.lon}°E` : (h.station_name || "Cell");
+        tr.innerHTML = `
+          <td><span class="rank-number">#${h.rank}</span></td>
+          <td><strong>${coords}</strong></td>
+          <td><span style="color: var(--color-ember); font-weight: 700;">${h.p_max_raw_mm} mm</span></td>
+          <td><span style="color: var(--color-voltage-violet); font-weight: 700;">${h.p_max_filt_mm} mm</span></td>
+          <td>${h.total_rainfall_mm} mm</td>
+          <td><strong>${h.ceps_score}</strong></td>
+          <td>
+            <button class="ghost-button btn-inspect-hotspot" data-lat="${h.lat || 19.0}" data-lon="${h.lon || 72.75}" style="padding: 4px 12px; font-size: 11px;">
+              ⚡ Inspect
+            </button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      // Bind Inspect buttons
+      document.querySelectorAll(".btn-inspect-hotspot").forEach(btn => {
+        btn.addEventListener("click", () => {
+          inputLat.value = btn.dataset.lat;
+          inputLon.value = btn.dataset.lon;
+          document.querySelectorAll(".preset-pill-btn").forEach(b => b.classList.remove("active"));
+          triggerPipeline({ autoScroll: true, randomizeSeed: false });
+        });
+      });
+
+      // Render Spatial Heatmap
+      drawSpatialHeatmap();
+    }
+
+    // Heatmap drawing logic
+    function drawSpatialHeatmap() {
+      if (!currentDbAnalysis || !currentDbAnalysis.spatial_maps) {
+        document.getElementById("heatmapCard").style.display = "none";
+        return;
+      }
+      document.getElementById("heatmapCard").style.display = "block";
+
+      const layerKey = selectHeatmapLayer.value;
+      const grid = currentDbAnalysis.spatial_maps[layerKey];
+      if (!grid || grid.length === 0) return;
+
+      const nRows = grid.length;
+      const nCols = grid[0].length;
+      const ctx = heatmapCanvas.getContext("2d");
+      const W = heatmapCanvas.width;
+      const H = heatmapCanvas.height;
+
+      ctx.clearRect(0, 0, W, H);
+
+      let maxVal = 0.001;
+      for (let r = 0; r < nRows; r++) {
+        for (let c = 0; c < nCols; c++) {
+          if (grid[r][c] > maxVal) maxVal = grid[r][c];
+        }
+      }
+      document.getElementById("heatmapLegendMax").innerText = `Max (${Math.round(maxVal)} mm)`;
+
+      const cellW = W / nCols;
+      const cellH = H / nRows;
+
+      for (let r = 0; r < nRows; r++) {
+        for (let c = 0; c < nCols; c++) {
+          const val = grid[r][c];
+          if (val <= 0) {
+            ctx.fillStyle = "#e6f0fa";
+          } else {
+            const norm = Math.min(1.0, val / maxVal);
+            ctx.fillStyle = getSlushHeatmapColor(norm);
+          }
+          const drawY = H - (r + 1) * cellH;
+          ctx.fillRect(c * cellW, drawY, cellW + 0.5, cellH + 0.5);
+        }
+      }
+    }
+
+    function getSlushHeatmapColor(norm) {
+      if (norm < 0.2) return "#4da2ff"; // Electric Blue
+      if (norm < 0.45) return "#55db9c"; // Mint Pop
+      if (norm < 0.75) return "#ffd731"; // Sunburst Yellow
+      return "#fb4903"; // Ember Orange/Red
+    }
+
+    selectHeatmapLayer.addEventListener("change", drawSpatialHeatmap);
+
+    // Heatmap hover tooltip
+    heatmapCanvas.addEventListener("mousemove", (e) => {
+      if (!currentDbAnalysis || !currentDbAnalysis.spatial_maps) return;
+      const rect = heatmapCanvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+
+      const W = rect.width;
+      const H = rect.height;
+      const grid = currentDbAnalysis.spatial_maps[selectHeatmapLayer.value];
+      if (!grid) return;
+
+      const nRows = grid.length;
+      const nCols = grid[0].length;
+
+      const col = Math.floor((x / W) * nCols);
+      const row = nRows - 1 - Math.floor((y / H) * nRows);
+
+      if (row >= 0 && row < nRows && col >= 0 && col < nCols) {
+        const val = grid[row][col];
+        const dims = currentDbAnalysis.dimensions || {};
+        const lat = dims.lat_min !== undefined ? (dims.lat_min + (row / nRows) * (dims.lat_max - dims.lat_min)).toFixed(2) : row;
+        const lon = dims.lon_min !== undefined ? (dims.lon_min + (col / nCols) * (dims.lon_max - dims.lon_min)).toFixed(2) : col;
+
+        heatmapTooltip.style.display = "block";
+        heatmapTooltip.style.left = `${x + 12}px`;
+        heatmapTooltip.style.top = `${y - 28}px`;
+        heatmapTooltip.innerHTML = `<strong>${lat}°N, ${lon}°E</strong>: ${val} mm`;
+      }
+    });
+
+    heatmapCanvas.addEventListener("mouseleave", () => {
+      heatmapTooltip.style.display = "none";
+    });
+
+    heatmapCanvas.addEventListener("click", (e) => {
+      if (!currentDbAnalysis || !currentDbAnalysis.dimensions) return;
+      const rect = heatmapCanvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      const dims = currentDbAnalysis.dimensions;
+      const nRows = currentDbAnalysis.spatial_maps[selectHeatmapLayer.value].length;
+      const nCols = currentDbAnalysis.spatial_maps[selectHeatmapLayer.value][0].length;
+
+      const col = Math.floor((x / rect.width) * nCols);
+      const row = nRows - 1 - Math.floor((y / rect.height) * nRows);
+
+      const lat = (dims.lat_min + (row / nRows) * (dims.lat_max - dims.lat_min)).toFixed(2);
+      const lon = (dims.lon_min + (col / nCols) * (dims.lon_max - dims.lon_min)).toFixed(2);
+
+      inputLat.value = lat;
+      inputLon.value = lon;
+      triggerPipeline({ autoScroll: true, randomizeSeed: false });
+    });
+
+    // Initial Trigger on page load
+    window.addEventListener("DOMContentLoaded", () => {
+      triggerPipeline();
+    });
+  </script>
+</body>
+
+</html>

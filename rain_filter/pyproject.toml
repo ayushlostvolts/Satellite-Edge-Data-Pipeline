@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "rain_filter"
+version = "0.1.0"
+description = "Custom denoising filter for IMD gridded rainfall time series"
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "numpy",
+    "xarray",
+    "netCDF4",
+    "matplotlib",
+    "scipy"
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["src*", "rain_filter*"]
