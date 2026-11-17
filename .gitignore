@@ -29,3 +29,7 @@ rain_filter/outputs/uploads/*
 !rain_filter/outputs/uploads/.gitkeep
 .DS_Store
 Thumbs.db
+
+# Large multi-year NetCDF downloads (downloaded via scripts/download_all_years.py)
+Dataset/RF25_ind201*.nc
+Dataset/RF25_ind202[0-3]*.nc
